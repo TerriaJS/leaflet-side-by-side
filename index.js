@@ -49,7 +49,7 @@ function noop () {
   return
 }
 
-function applyToMissingLayers(map, layers, layersToCheckAgainst, applyFunction) {
+function applyToMissingLayers (map, layers, layersToCheckAgainst, applyFunction) {
   // Loops through each layer in layers, and if the layer is on the map but NOT in layersToCheckAgainst,
   // calls applyFunction(layer).
   layers.forEach(function (layer) {
@@ -61,7 +61,7 @@ function applyToMissingLayers(map, layers, layersToCheckAgainst, applyFunction) 
   })
 }
 
-function setClip(layer, clip) {
+function setClip (layer, clip) {
   if (layer.getContainer()) {
     layer.getContainer().style.clip = clip
   }
@@ -74,8 +74,8 @@ L.Control.SideBySide = L.Control.extend({
   },
 
   initialize: function (leftLayers, rightLayers, options) {
-    this.setLeftLayers(leftLayers)
-    this.setRightLayers(rightLayers)
+    this._leftLayers = asArray(leftLayers)
+    this._rightLayers = asArray(rightLayers)
     L.setOptions(this, options)
   },
 
@@ -104,7 +104,7 @@ L.Control.SideBySide = L.Control.extend({
     range.value = 0.5
     range.style.paddingLeft = range.style.paddingRight = this.options.padding + 'px'
     this._addEvents()
-    this._updateLayers(this._leftLayers, this._rightLayers)
+    this.updateLayers()
     return this
   },
 
@@ -113,7 +113,7 @@ L.Control.SideBySide = L.Control.extend({
     if (!this._map) {
       return this
     }
-    this._updateLayers([], [])
+    this.updateLayers([], [])
     this._removeEvents()
     L.DomUtil.remove(this._container)
 
@@ -123,12 +123,12 @@ L.Control.SideBySide = L.Control.extend({
   },
 
   setLeftLayers: function (leftLayers) {
-    this._updateLayers(asArray(leftLayers), null)
+    this.updateLayers(asArray(leftLayers), null)
     return this
   },
 
   setRightLayers: function (rightLayers) {
-    this._updateLayers(null, asArray(rightLayers))
+    this.updateLayers(null, asArray(rightLayers))
     return this
   },
 
@@ -143,10 +143,10 @@ L.Control.SideBySide = L.Control.extend({
     this.fire('dividermove', {x: dividerX})
     var clipLeft = 'rect(' + [nw.y, clipX, se.y, nw.x].join('px,') + 'px)'
     var clipRight = 'rect(' + [nw.y, se.x, se.y, clipX].join('px,') + 'px)'
-    this._leftLayers.forEach(function(layer) {
+    this._leftLayers.forEach(function (layer) {
       setClip(layer, clipLeft)
     })
-    this._rightLayers.forEach(function(layer) {
+    this._rightLayers.forEach(function (layer) {
       setClip(layer, clipRight)
     })
   },
@@ -155,29 +155,34 @@ L.Control.SideBySide = L.Control.extend({
     setClip(layer, '')
   },
 
-  _updateLayers: function (newLeftLayers, newRightLayers) {
+  updateLayers: function (newLeftLayers, newRightLayers) {
+    // Only sets the layers if there is a map.
+    // Only shows the layers if they are on the map.
+    // If either parameter is not supplied, maintains the existing layers on that side.
+    // This can still lead to a change in display if the layers have been added or removed from the map.
     var map = this._map
     if (!map) {
       return this
     }
-    var prevLeftLayers = asArray(this._leftLayers)
-    var prevRightLayers = asArray(this._rightLayers)
+    var prevLeftLayers = this._leftLayers
+    var prevRightLayers = this._rightLayers
 
-    // If either parameter is not supplied, use the original; this can still lead to events being fired
-    // because whether the layer is on the map can change.
     if (!newLeftLayers) {
-      newLeftLayers = asArray(this._leftLayers)
+      newLeftLayers = prevLeftLayers
     }
     if (!newRightLayers) {
-      newRightLayers = asArray(this._rightLayers)
+      newRightLayers = prevRightLayers
     }
+    newLeftLayers = asArray(newLeftLayers)
+    newRightLayers = asArray(newRightLayers)
+
     var that = this
     // Add new layers.
-    applyToMissingLayers(map, newLeftLayers, prevLeftLayers, function(layer) {that.fire('leftlayeradd', {layer: layer})})
-    applyToMissingLayers(map, newRightLayers, prevRightLayers, function(layer) {that.fire('rightlayeradd', {layer: layer})})
+    applyToMissingLayers(map, newLeftLayers, prevLeftLayers, function (layer) { that.fire('leftlayeradd', {layer: layer}) })
+    applyToMissingLayers(map, newRightLayers, prevRightLayers, function (layer) { that.fire('rightlayeradd', {layer: layer}) })
     // Remove layers which were present, but are no longer.
-    applyToMissingLayers(map, prevLeftLayers, newLeftLayers, function(layer) {that.fire('leftlayerremove', {layer: layer})})
-    applyToMissingLayers(map, prevRightLayers, newRightLayers, function(layer) {that.fire('rightlayerremove', {layer: layer})})
+    applyToMissingLayers(map, prevLeftLayers, newLeftLayers, function (layer) { that.fire('leftlayerremove', {layer: layer}) })
+    applyToMissingLayers(map, prevRightLayers, newRightLayers, function (layer) { that.fire('rightlayerremove', {layer: layer}) })
 
     // Any layers which have been removed from the control need their clip css removed, so they appear on both sides.
     applyToMissingLayers(map, prevLeftLayers.concat(prevRightLayers), newLeftLayers.concat(newRightLayers), that._removeClip)
@@ -193,7 +198,7 @@ L.Control.SideBySide = L.Control.extend({
 
   _updateLayersFromEvent: function () {
     // If a layer is added or removed from the map, we don't need to pass which layer it is.
-    this._updateLayers()
+    this.updateLayers()
   },
 
   _addEvents: function () {
@@ -203,8 +208,8 @@ L.Control.SideBySide = L.Control.extend({
     map.on('move', this._updateClip, this)
     map.on('layeradd layerremove', this._updateLayersFromEvent, this)
     on(range, getRangeEvent(range), this._updateClip, this)
-    on(range, 'mousedown touchstart', cancelMapDrag, this)
-    on(range, 'mouseup touchend', uncancelMapDrag, this)
+    on(range, L.Browser.touch ? 'touchstart' : 'mousedown', cancelMapDrag, this)
+    on(range, L.Browser.touch ? 'touchend' : 'mouseup', uncancelMapDrag, this)
   },
 
   _removeEvents: function () {
@@ -212,8 +217,8 @@ L.Control.SideBySide = L.Control.extend({
     var map = this._map
     if (range) {
       off(range, getRangeEvent(range), this._updateClip, this)
-      off(range, 'mousedown touchstart', cancelMapDrag, this)
-      off(range, 'mouseup touchend', uncancelMapDrag, this)
+      off(range, L.Browser.touch ? 'touchstart' : 'mousedown', cancelMapDrag, this)
+      off(range, L.Browser.touch ? 'touchend' : 'mouseup', uncancelMapDrag, this)
     }
     if (map) {
       map.off('layeradd layerremove', this._updateLayersFromEvent, this)

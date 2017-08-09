@@ -23,6 +23,35 @@ function getRangeEvent (rangeInput) {
   return 'oninput' in rangeInput ? 'input' : 'change'
 }
 
+function startDrag (e) {
+  // In case we're already dragging...
+  stopDrag.call(this, e);
+
+  cancelMapDrag.call(this);
+
+  // While dragging is in progress, subscribe to document-level movement and up events.
+  on(document, L.Browser.pointer ? 'touchmove' : 'mousemove', drag, this)
+  on(document, L.Browser.pointer ? 'touchend' : 'mouseup', stopDrag, this)
+
+  e.preventDefault()
+}
+
+function stopDrag (e) {
+  off(document, L.Browser.pointer ? 'touchmove' : 'mousemove', drag, this)
+  off(document, L.Browser.pointer ? 'touchend' : 'mouseup', stopDrag, this)
+
+  uncancelMapDrag.call(this, e)
+}
+
+function drag (e) {
+  var mapContainer = this._map.getContainer()
+  var mapRect = mapContainer.getBoundingClientRect()
+  var left = mapRect.left + this.options.padding + (this.options.thumbSize * 0.5)
+  var right = mapRect.right - this.options.padding - (this.options.thumbSize * 0.5)
+  this._splitFraction = Math.min(1.0, Math.max(0.0, (e.clientX - left) / (right - left)))
+  this._updateClip()
+}
+
 function cancelMapDrag () {
   mapWasDragEnabled = this._map.dragging.enabled()
   mapWasTapEnabled = this._map.tap && this._map.tap.enabled()
@@ -84,7 +113,7 @@ L.Control.SideBySide = L.Control.extend({
   },
 
   getPosition: function () {
-    var rangeValue = this._range.value
+    var rangeValue = this._splitFraction
     var offset = (0.5 - rangeValue) * (2 * this.options.padding + this.options.thumbSize)
     return this._map.getSize().x * rangeValue + offset
   },
@@ -102,12 +131,12 @@ L.Control.SideBySide = L.Control.extend({
     this._divider = L.DomUtil.create('div', 'leaflet-sbs-divider', container)
     var range = this._range = L.DomUtil.create('div', 'leaflet-sbs-range', container)
     range.innerHTML = '&#x2980;'
-    // range.type = 'range'
-    // range.min = 0
-    // range.max = 1
-    // range.step = 'any'
-    // range.value = 0.5
-    // range.style.paddingLeft = range.style.paddingRight = this.options.padding + 'px'
+    range.style.width = this.options.thumbSize + 'px';
+    range.style.height = this.options.thumbSize + 'px';
+    range.style.marginLeft = range.style.marginTop = range.style.marginTop = '-' + (this.options.thumbSize * 0.5) + 'px';
+    range.style.lineHeight = (this.options.thumbSize - 2) + 'px';
+    range.style.borderRadius = (this.options.thumbSize * 0.5) + 'px';
+    range.style.fontSize = (this.options.thumbSize - 12) + 'px';
     this._addEvents()
     this.updateLayers()
     return this
@@ -154,8 +183,8 @@ L.Control.SideBySide = L.Control.extend({
     this._rightLayers.forEach(function (layer) {
       setClip(layer, clipRight)
     })
-    this._range.style.left = '500px'; //(dividerX - 20) + 'px'
-    this._range.style.top = (Math.abs(nw.y - se.y) * 0.5 - 20) + 'px'
+    this._range.style.left = dividerX + 'px'
+    this._range.style.top = Math.abs(nw.y - se.y) * 0.5 + 'px'
   },
 
   _removeClip: function (layer) {
@@ -214,9 +243,9 @@ L.Control.SideBySide = L.Control.extend({
     if (!map || !range) return
     map.on('move', this._updateClip, this)
     map.on('layeradd layerremove', this._updateLayersFromEvent, this)
-    on(range, getRangeEvent(range), this._updateClip, this)
-    on(range, L.Browser.pointer ? 'touchstart' : 'mousedown', cancelMapDrag, this)
-    on(range, L.Browser.pointer ? 'touchend' : 'mouseup', uncancelMapDrag, this)
+    //on(range, getRangeEvent(range), this._updateClip, this)
+    on(range, L.Browser.pointer ? 'touchstart' : 'mousedown', startDrag, this)
+    //on(range, L.Browser.pointer ? 'touchend' : 'mouseup', uncancelMapDrag, this)
     on(range, 'click', cancelClick, this)
   },
 
@@ -224,9 +253,9 @@ L.Control.SideBySide = L.Control.extend({
     var range = this._range
     var map = this._map
     if (range) {
-      off(range, getRangeEvent(range), this._updateClip, this)
-      off(range, L.Browser.pointer ? 'touchstart' : 'mousedown', cancelMapDrag, this)
-      off(range, L.Browser.pointer ? 'touchend' : 'mouseup', uncancelMapDrag, this)
+      //off(range, getRangeEvent(range), this._updateClip, this)
+      off(range, L.Browser.pointer ? 'touchstart' : 'mousedown', startDrag, this)
+      //off(range, L.Browser.pointer ? 'touchend' : 'mouseup', uncancelMapDrag, this)
       off(range, 'click', cancelClick, this)
     }
     if (map) {

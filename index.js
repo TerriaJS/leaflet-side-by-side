@@ -212,8 +212,8 @@ L.Control.SideBySide = L.Control.extend({
     map.on('move', this._updateClip, this)
     map.on('layeradd layerremove', this._updateLayersFromEvent, this)
     on(range, getRangeEvent(range), this._updateClip, this)
-    on(range, L.Browser.touch ? 'touchstart' : 'mousedown', cancelMapDrag, this)
-    on(range, L.Browser.touch ? 'touchend' : 'mouseup', uncancelMapDrag, this)
+    on(range, L.Browser.pointer ? 'touchstart' : 'mousedown', cancelMapDrag, this)
+    on(range, L.Browser.pointer ? 'touchend' : 'mouseup', uncancelMapDrag, this)
     on(range, 'click', cancelClick, this)
   },
 
@@ -222,8 +222,8 @@ L.Control.SideBySide = L.Control.extend({
     var map = this._map
     if (range) {
       off(range, getRangeEvent(range), this._updateClip, this)
-      off(range, L.Browser.touch ? 'touchstart' : 'mousedown', cancelMapDrag, this)
-      off(range, L.Browser.touch ? 'touchend' : 'mouseup', uncancelMapDrag, this)
+      off(range, L.Browser.pointer ? 'touchstart' : 'mousedown', cancelMapDrag, this)
+      off(range, L.Browser.pointer ? 'touchend' : 'mouseup', uncancelMapDrag, this)
       off(range, 'click', cancelClick, this)
     }
     if (map) {

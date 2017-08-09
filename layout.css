@@ -1,9 +1,19 @@
 .leaflet-sbs-range {
     position: absolute;
-    top: 50%;
-    width: 100%;
+    width: 40px;
+    height: 40px;
+    border-radius: 20px;
+    border: 1px solid black;
+    text-align: center;
+    line-height: 38px;
+    left: 500px;
+    top: 500px;
+    font-size: 28px;
+    font-family: monospace;
+    background-color: lightgrey;
     z-index: 999;
 }
+
 .leaflet-sbs-divider {
     position: absolute;
     top: 0;

@@ -1,6 +1,6 @@
 var L = require('leaflet')
 require('./layout.css')
-require('./range.css')
+//require('./range.css')
 
 var mapWasDragEnabled
 var mapWasTapEnabled
@@ -100,13 +100,14 @@ L.Control.SideBySide = L.Control.extend({
     var container = this._container = L.DomUtil.create('div', 'leaflet-sbs', map._controlContainer)
 
     this._divider = L.DomUtil.create('div', 'leaflet-sbs-divider', container)
-    var range = this._range = L.DomUtil.create('input', 'leaflet-sbs-range', container)
-    range.type = 'range'
-    range.min = 0
-    range.max = 1
-    range.step = 'any'
-    range.value = 0.5
-    range.style.paddingLeft = range.style.paddingRight = this.options.padding + 'px'
+    var range = this._range = L.DomUtil.create('div', 'leaflet-sbs-range', container)
+    range.innerHTML = '&#x2980;'
+    // range.type = 'range'
+    // range.min = 0
+    // range.max = 1
+    // range.step = 'any'
+    // range.value = 0.5
+    // range.style.paddingLeft = range.style.paddingRight = this.options.padding + 'px'
     this._addEvents()
     this.updateLayers()
     return this
@@ -153,6 +154,8 @@ L.Control.SideBySide = L.Control.extend({
     this._rightLayers.forEach(function (layer) {
       setClip(layer, clipRight)
     })
+    this._range.style.left = '500px'; //(dividerX - 20) + 'px'
+    this._range.style.top = (Math.abs(nw.y - se.y) * 0.5 - 20) + 'px'
   },
 
   _removeClip: function (layer) {

@@ -40,6 +40,10 @@ function uncancelMapDrag (e) {
   }
 }
 
+function cancelClick (e) {
+  e.stopPropagation()
+}
+
 // convert arg to an array - returns empty array if arg is undefined
 function asArray (arg) {
   return (arg === undefined) ? [] : Array.isArray(arg) ? arg : [arg]
@@ -210,6 +214,7 @@ L.Control.SideBySide = L.Control.extend({
     on(range, getRangeEvent(range), this._updateClip, this)
     on(range, L.Browser.touch ? 'touchstart' : 'mousedown', cancelMapDrag, this)
     on(range, L.Browser.touch ? 'touchend' : 'mouseup', uncancelMapDrag, this)
+    on(range, 'click', cancelClick, this)
   },
 
   _removeEvents: function () {
@@ -219,6 +224,7 @@ L.Control.SideBySide = L.Control.extend({
       off(range, getRangeEvent(range), this._updateClip, this)
       off(range, L.Browser.touch ? 'touchstart' : 'mousedown', cancelMapDrag, this)
       off(range, L.Browser.touch ? 'touchend' : 'mouseup', uncancelMapDrag, this)
+      off(range, 'click', cancelClick, this)
     }
     if (map) {
       map.off('layeradd layerremove', this._updateLayersFromEvent, this)

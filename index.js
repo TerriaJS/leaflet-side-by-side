@@ -25,7 +25,8 @@ function getRangeEvent (rangeInput) {
 
 function startDrag (e) {
   // In case we're already dragging...
-  stopDrag.call(this, e);
+  off(document, L.Browser.pointer ? 'touchmove' : 'mousemove', drag, this)
+  off(document, L.Browser.pointer ? 'touchend' : 'mouseup', stopDrag, this)
 
   cancelMapDrag.call(this);
 
@@ -60,13 +61,19 @@ function cancelMapDrag () {
 }
 
 function uncancelMapDrag (e) {
-  this._refocusOnMap(e)
-  if (mapWasDragEnabled) {
-    this._map.dragging.enable()
-  }
-  if (mapWasTapEnabled) {
-    this._map.tap.enable()
-  }
+  // Use a timeout to unwind the stack before re-enabling dragging.
+  // This way a click event triggered by the same event that caused us to uncancel
+  // (e.g. mouseup) won't cause any unwanted actions.
+  var that = this
+  setTimeout(function() {
+    that._refocusOnMap(e)
+    if (mapWasDragEnabled) {
+      that._map.dragging.enable()
+    }
+    if (mapWasTapEnabled) {
+      that._map.tap.enable()
+    }
+  }, 0);
 }
 
 function cancelClick (e) {
